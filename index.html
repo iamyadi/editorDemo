@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .editor {
+            background-color: antiquewhite;
+            height: 300px;
+            width: 100%;
+            outline: none;
+            padding: 20px;
+        }
+        .hiden {
+            z-index: 99;
+            opacity: 0;
+            position: absolute;
+            width: 66px;
+            display: inline-block;
+            transform: translate(-50%, -100%);
+            background-color: white;
+        }
+        img{
+            width: 200px;
+            height: 200px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div>
+            <button>formatBlock</button>
+            <button>foreColor</button>
+            <button>fontSize</button>
+            <button>backColor</button>
+            <button>indent</button>
+            <button>undo</button>
+            <button>createLink</button>
+            <button>
+                <span>insertImage</span>
+                <input id='upload' type="file" class="hiden" accept=".jpg, .jpeg, .png" onchange="insertImg()">
+            </button>
+        </div>
+        <div class="editor" id='editor' contenteditable="true"></div>
+    </div>
+    <script>
+        let events = [{
+            event: 'formatBlock',
+            arg: 'H1'
+        }, {
+            event: 'foreColor',
+            arg: 'red'
+        }, {
+            event: 'fontSize',
+            arg: '4'
+        }, {
+            event: 'backColor',
+            arg: 'gray'
+        }, {
+            event: 'indent',
+            arg: null
+        }, {
+            event: 'undo',
+            arg: null
+        }, {
+            event: 'createLink',
+            arg: null
+        }, {
+            event: 'insertImage',
+            arg: null
+        }]
+        let buttons = Array.from(document.querySelectorAll('button'))
+        let globalRange
+        buttons.forEach((button, index) => { // 其实本例子中，除了插入图片，其他均未失去焦点，因此只在insertImg中调用了restoreRange
+            if (index === buttons.length - 1) return
+            button.addEventListener('click', () => {
+                if (events[index].event === 'createLink') { // 插入链接
+                    const url = window.prompt('输入url')
+                    if (url) {
+                        document.execCommand(events[index].event, true, url)
+                    }
+                } else {
+                    document.execCommand(events[index].event, true, events[index].arg)
+                }
+            })
+        })
+        function insertImg() { // 插入图片
+            let file = document.getElementById('upload').files[0]
+            let url = URL.createObjectURL(file)
+            restoreRange()
+            document.execCommand('insertImage', true, url)
+        }
+        function saveRange() { // 时刻保存range对象
+            const selection = window.getSelection();
+            let range;
+
+            if (selection.getRangeAt && selection.rangeCount) {
+                range = selection.getRangeAt(0);
+            } else {
+                range = window.createRange();
+            }
+
+            globalRange = range;
+        }
+        function restoreRange() { //调用document.execCommand之前需要恢复range
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(globalRange);
+        }
+        // 绑定方法，时刻保存
+        document.getElementById('editor').addEventListener('keyup', (e) => saveRange())
+        document.getElementById('editor').addEventListener('mouseout', (e) => saveRange())
+        document.getElementById('editor').addEventListener('mouseup', (e) => saveRange())
+        document.getElementById('editor').addEventListener('click', (e) => saveRange())
+    </script>
+
+</body>
+
+</html>
